@@ -12,6 +12,7 @@ from lxml import html
 
 
 DOWNLOAD_PATH = 'videos'
+COVERS_DIR = 'covers'
 VIDEOS_URL = 'https://virtualrealporn.com/videos/'
 COOKIES_JSON_PATH = 'cookies/vrp-cookies.json'
 
@@ -21,6 +22,7 @@ MAX_RETRY = 3
 DETAIL_PAGES_XPATH = '//a[@class="w-portfolio-item-anchor"]/attribute::href'
 
 TITLE_XPATH = '//div[@class="w-pagehead"]/h1/text()|//div[@class="w-pagehead"]/p/text()'
+COVERS_XPATH = '//img[@class="attachment-gallery-full size-gallery-full"]/attribute::src'
 HIGH_XPATH = '//td[a="3200×1600 High"]/a/attribute::href'
 ANDROID_XPATH = '//td[a="1080p"]/a/attribute::href'
 FORMAT_XPATHS = (HIGH_XPATH, ANDROID_XPATH)
@@ -45,12 +47,17 @@ def main():
     files_urls = []
     for url in detail_pages:
         time.sleep(random.random() + 2)
+
         info = get_video_page_info(url, cookies)
         download_dir = os.path.join(DOWNLOAD_PATH, safe_path_name(info['title']))
-        os.makedirs(download_dir, exist_ok=True)
+        covers_dir = os.path.join(download_dir, COVERS_DIR)
+        os.makedirs(covers_dir, exist_ok=True)
+
+        for cover_url in info['cover_urls']:
+            with_retry(download_file, cover_url, covers_dir, cookies)
+
         for video_url in info['video_urls']:
-            fp = os.path.join(download_dir, url.split('/')[-1])
-            with_retry(download_file, video_url, fp, cookies)
+            with_retry(download_file, video_url, download_dir, cookies)
             files_urls.append(video_url)
 
     with open("log/urls-{}.json".format(datetime.datetime.now().isoformat()), 'w') as f:
@@ -60,8 +67,9 @@ def main():
 def get_video_page_info(page_url, cookies):
     info = {
         'video_urls': [],
+        'cover_urls': [],
     }
-    
+
     try:
         page = with_retry(requests.get, page_url, cookies=cookies, timeout=TIMEOUT)
         tree = html.fromstring(page.content)
@@ -71,27 +79,30 @@ def get_video_page_info(page_url, cookies):
         for xpath in FORMAT_XPATHS:
             info['video_urls'].append(tree.xpath(xpath)[0])
 
+        info['cover_urls'] =  tree.xpath(COVERS_XPATH)
+
     except:
         log.exception('Unhandled error on page {}'.format(page_url))
 
     return info
 
 
-def download_file(src_url, dst_path, cookies=None):
+def download_file(src_url, dst_dir, cookies=None):
     log.info('Downloading file: {}'.format(src_url))
-    
-    if os.path.exists(dst_path):
+    fp = os.path.join(dst_dir, src_url.split('/')[-1])
+
+    if os.path.exists(fp):
         log.info('File exists, skipping')
         return
     else:
         try:
             r = requests.get(src_url, cookies=cookies, stream=True, timeout=TIMEOUT)
-            with open(dst_path, 'wb') as f:
+            with open(fp, 'wb') as f:
                 for chunk in r.iter_content(chunk_size=1024):
                     if chunk:
                         f.write(chunk)
         except:
-            os.unlink(dst_path)
+            os.unlink(fp)
             raise
 
 
