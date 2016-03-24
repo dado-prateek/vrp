@@ -9,10 +9,10 @@ By default grabs videos in 3200×1600 High and 1080p formats. May be extend by a
 
 ### How to use:
 * Login into site via browser and fill the `cookies/vrp-cookies.json` file with cookies data.
-* Create dirs:
+* Create destination directory:
 ```
 cd vrp
-mkdir {videos,log}
+mkdir videos
 ```
 * Run grabber:
 ```

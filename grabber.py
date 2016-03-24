@@ -31,12 +31,7 @@ DESIRED_FORMATS = {
 
 
 log_format = '%(asctime)16s %(levelname)6s %(message)s'
-logging.basicConfig(format=log_format,
-                    filename='log/grabber.log',
-                    level=logging.INFO)
-console = logging.StreamHandler()
-console.setFormatter(logging.Formatter(log_format))
-logging.getLogger('').addHandler(console)
+logging.basicConfig(format=log_format, level=logging.INFO)
 log = logging.getLogger(__name__)
 
 
@@ -46,7 +41,6 @@ def main():
     tree = html.fromstring(page.content)
     detail_pages = tree.xpath(DETAIL_PAGES_XPATH)
 
-    files_urls = []
     for url in detail_pages:
         time.sleep(random.random() + 2)
 
@@ -60,10 +54,6 @@ def main():
 
         for video_url in info['video_urls']:
             with_retry(download_file, video_url, download_dir, cookies)
-            files_urls.append(video_url)
-
-    with open("log/urls-{}.json".format(datetime.datetime.now().isoformat()), 'w') as f:
-        json.dump(files_urls, f)
 
 
 def get_video_page_info(page_url, cookies):
