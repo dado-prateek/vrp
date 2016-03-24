@@ -23,9 +23,11 @@ DETAIL_PAGES_XPATH = '//a[@class="w-portfolio-item-anchor"]/attribute::href'
 
 TITLE_XPATH = '//div[@class="w-pagehead"]/h1/text()|//div[@class="w-pagehead"]/p/text()'
 COVERS_XPATH = '//img[@class="attachment-gallery-full size-gallery-full"]/attribute::src'
-HIGH_XPATH = '//td[a="3200×1600 High"]/a/attribute::href'
-ANDROID_XPATH = '//td[a="1080p"]/a/attribute::href'
-FORMAT_XPATHS = (HIGH_XPATH, ANDROID_XPATH)
+
+DESIRED_FORMATS = {
+    'Best': '//table[@class="downloads"]/tbody/tr[2]/td/a/attribute::href',
+    'Android': '//tr[td/strong[text()="Android / iOS"]]/following-sibling::tr[1]/td/a/attribute::href'
+}
 
 
 log_format = '%(asctime)16s %(levelname)6s %(message)s'
@@ -76,9 +78,11 @@ def get_video_page_info(page_url, cookies):
 
         info['title'] = '{} ({})'.format(*tree.xpath(TITLE_XPATH))
 
-        for xpath in FORMAT_XPATHS:
-            info['video_urls'].append(tree.xpath(xpath)[0])
-
+        for name, xpath in DESIRED_FORMATS.items():
+            try:
+                info['video_urls'].append(tree.xpath(xpath)[0])
+            except IndexError:
+                log.warn('No format "{}" for video {}'.format(name, title))
         info['cover_urls'] =  tree.xpath(COVERS_XPATH)
 
     except:
