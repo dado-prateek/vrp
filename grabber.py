@@ -14,7 +14,7 @@ from lxml import html
 DOWNLOAD_PATH = 'videos'
 COVERS_DIR = 'covers'
 VIDEOS_URL = 'https://virtualrealporn.com/videos/'
-COOKIES_JSON_PATH = 'cookies/vrp-cookies.json'
+COOKIES_JSON_PATH = 'cookies.json'
 
 TIMEOUT = 15
 MAX_RETRY = 3

@@ -8,7 +8,7 @@ By default grabs videos in 3200×1600 High and 1080p formats. May be extend by a
  * requests
 
 ### How to use:
-* Login into site via browser and fill the `cookies/vrp-cookies.json` file with cookies data.
+* Login into site via browser and fill the `cookies.json` file with your cookies data.
 * Create destination directory:
 ```
 cd vrp
