@@ -78,10 +78,12 @@ def get_video_page_info(page_url, cookies):
         info['title'] = '{} ({})'.format(*tree.xpath(TITLE_XPATH))
 
         for name, xpath in DESIRED_FORMATS.items():
-            try:
-                info['video_urls'].update(tree.xpath(xpath))
-            except IndexError:
-                log.warn('No format "{}" for video {}'.format(name, title))
+            urls = tree.xpath(xpath)
+            if urls:
+                info['video_urls'].update(urls)
+            else:
+                log.warn('No format "{}" for video {}'.format(name, info['title']))
+
         info['cover_urls'] =  tree.xpath(COVERS_XPATH)
 
     except:
