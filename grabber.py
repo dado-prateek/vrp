@@ -3,17 +3,20 @@
 import logging
 import os
 import json
-import requests
 import time
 import random
 import datetime
 import string
+import urllib.parse
+
+import requests
 from lxml import html
 
 
-DOWNLOAD_PATH = 'videos'
-COVERS_DIR = 'covers'
+DOWNLOAD_PATH = '~/Downloads'
 VIDEOS_URL = 'https://virtualrealporn.com/videos/'
+
+COVERS_DIR = 'covers'
 COOKIES_JSON_PATH = 'cookies.json'
 
 TIMEOUT = 15
@@ -26,7 +29,8 @@ COVERS_XPATH = '//img[@class="attachment-gallery-full size-gallery-full"]/attrib
 
 DESIRED_FORMATS = {
     'Best': '//table[@class="downloads"]/tbody/tr[2]/td/a/attribute::href',
-    'Android': '//tr[td/strong[text()="Android / iOS"]]/following-sibling::tr[1]/td/a/attribute::href'
+    'Android': '//tr[td/strong[text()="Android / iOS"]]/following-sibling::tr[1]/td/a/attribute::href',
+    # 'All': '//table[@class="downloads"]/tbody/tr/td/a/attribute::href',
 }
 
 
@@ -36,6 +40,11 @@ log = logging.getLogger(__name__)
 
 
 def main():
+    site_name = urllib.parse.urlsplit(VIDEOS_URL).netloc
+    download_dir = safe_path_join(os.path.expanduser(DOWNLOAD_PATH),
+                                  site_name)
+    log.info('Starting grabbing {} into {}'.format(VIDEOS_URL, download_dir))
+
     cookies = json.load(open(COOKIES_JSON_PATH))
     page = with_retry(requests.get, VIDEOS_URL, cookies=cookies, timeout=TIMEOUT)
     tree = html.fromstring(page.content)
@@ -45,15 +54,15 @@ def main():
         time.sleep(random.random() + 2)
 
         info = get_video_page_info(url, cookies)
-        download_dir = os.path.join(DOWNLOAD_PATH, safe_path_name(info['title']))
-        covers_dir = os.path.join(download_dir, COVERS_DIR)
+        videos_dir = safe_path_join(download_dir, info['title'])
+        covers_dir = safe_path_join(videos_dir, COVERS_DIR)
         os.makedirs(covers_dir, exist_ok=True)
 
         for cover_url in info['cover_urls']:
             with_retry(download_file, cover_url, covers_dir, cookies)
 
         for video_url in info['video_urls']:
-            with_retry(download_file, video_url, download_dir, cookies)
+            with_retry(download_file, video_url, videos_dir, cookies)
 
 
 def get_video_page_info(page_url, cookies):
@@ -100,11 +109,14 @@ def download_file(src_url, dst_dir, cookies=None):
             raise
 
 
-def safe_path_name(name):
-    name = name.replace('&', 'and')
-    valid_chars = "-_.() %s%s" % (string.ascii_letters, string.digits)
-    safe_name = ''.join(c for c in name if c in valid_chars)
-    return safe_name
+def safe_path_join(*args):
+    return safe_path(os.path.join(*args))
+
+
+def safe_path(path):
+    path = path.replace('&', 'and')
+    valid_chars = '-_.()/\ {}{}'.format(string.ascii_letters, string.digits)
+    return ''.join(c for c in path if c in valid_chars)
 
 
 def with_retry(func, *args, **kwargs):

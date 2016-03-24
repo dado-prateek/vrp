@@ -1,6 +1,6 @@
 ## Grabber for virtualrealporn.com videos
 
-By default grabs videos in 3200×1600 High and 1080p formats. May be extend by adding appropriate XPaths.
+By default grabs videos in best and Android formats. May be extend by adding appropriate XPaths to `DESIRED_FORMATS`.
 
 ### Requirements:
  * python3
@@ -9,11 +9,6 @@ By default grabs videos in 3200×1600 High and 1080p formats. May be extend by a
 
 ### How to use:
 * Login into site via browser and fill the `cookies.json` file with your cookies data.
-* Create destination directory:
-```
-cd vrp
-mkdir videos
-```
 * Run grabber:
 ```
 ./grabber.py
