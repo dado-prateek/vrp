@@ -48,7 +48,7 @@ def main():
     cookies = json.load(open(COOKIES_JSON_PATH))
     page = with_retry(requests.get, VIDEOS_URL, cookies=cookies, timeout=TIMEOUT)
     tree = html.fromstring(page.content)
-    detail_pages = tree.xpath(DETAIL_PAGES_XPATH)
+    detail_pages = complete_urls(tree.xpath(DETAIL_PAGES_XPATH), VIDEOS_URL)
 
     for url in detail_pages:
         time.sleep(random.random() + 2)
@@ -78,18 +78,35 @@ def get_video_page_info(page_url, cookies):
         info['title'] = '{} ({})'.format(*tree.xpath(TITLE_XPATH))
 
         for name, xpath in DESIRED_FORMATS.items():
-            urls = tree.xpath(xpath)
+            urls = complete_urls(tree.xpath(xpath), page_url)
             if urls:
                 info['video_urls'].update(urls)
             else:
                 log.warn('No format "{}" for video {}'.format(name, info['title']))
 
-        info['cover_urls'] =  tree.xpath(COVERS_XPATH)
+        info['cover_urls'] =  complete_urls(tree.xpath(COVERS_XPATH), page_url)
 
     except:
         log.exception('Unhandled error on page {}'.format(page_url))
 
     return info
+
+
+def complete_urls(urls, parent):
+    return [complete_url(x, parent) for x in urls]
+
+
+def complete_url(url, parent):
+    url_info = urllib.parse.urlsplit(url)._asdict()
+    parent_info = urllib.parse.urlsplit(parent)
+    log.debug(url_info)
+    if not url_info['scheme']:
+        url_info['scheme'] = parent_info.scheme
+    if not url_info['netloc']:
+        url_info['netloc'] = parent_info.netloc
+    log.debug(url_info)
+
+    return urllib.parse.SplitResult(**url_info).geturl()
 
 
 def download_file(src_url, dst_dir, cookies=None):
